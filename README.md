@@ -1,6 +1,6 @@
 # Azure Virtual Desktop Connectivity Test Script
 
-A comprehensive PowerShell script for diagnosing Azure Virtual Desktop (AVD) connectivity issues and disconnects from end-user devices. This script performs extensive network testing without requiring Azure admin credentials, making it perfect for troubleshooting AVD connection problems.
+PowerShell script for diagnosing Azure Virtual Desktop (AVD) connectivity issues and disconnects from end-user devices. Performs extensive network testing without requiring Azure admin credentials, making it ideal for troubleshooting AVD connection problems.
 
 ## Features
 
