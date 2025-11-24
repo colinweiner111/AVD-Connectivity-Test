@@ -257,6 +257,76 @@ For issues, questions, or feature requests, please open an issue on GitHub.
 - PowerShell community for networking cmdlets
 - Network troubleshooting best practices
 
+## Microsoft Documentation Resources
+
+### Azure Virtual Desktop
+- [AVD Network Connectivity Overview](https://learn.microsoft.com/en-us/azure/virtual-desktop/network-connectivity)
+- [Understanding Network Connectivity](https://learn.microsoft.com/en-us/azure/virtual-desktop/understand-network-connectivity)
+- [RDP Shortpath for Public Networks](https://learn.microsoft.com/en-us/azure/virtual-desktop/rdp-shortpath?tabs=public-networks)
+- [Session Connectivity](https://learn.microsoft.com/en-us/azure/virtual-desktop/troubleshoot-connection-latency)
+
+### Troubleshooting Guides
+- [Troubleshoot Connection Quality](https://learn.microsoft.com/en-us/azure/virtual-desktop/troubleshoot-connection-quality)
+- [Network Connectivity Checklist](https://learn.microsoft.com/en-us/azure/virtual-desktop/required-fqdn-endpoint)
+- [Azure Virtual Desktop Experience Estimator](https://azure.microsoft.com/en-us/products/virtual-desktop/assessment/)
+
+### Network Requirements
+- [Required URLs for AVD](https://learn.microsoft.com/en-us/azure/virtual-desktop/required-fqdn-endpoint)
+- [Bandwidth Requirements](https://learn.microsoft.com/en-us/azure/virtual-desktop/rdp-bandwidth)
+- [Proxy Server Guidelines](https://learn.microsoft.com/en-us/azure/virtual-desktop/proxy-server-support)
+
+## How Azure Virtual Desktop Connectivity Works
+
+```
+┌─────────────────┐
+│   End User      │
+│   Device        │ ← This script tests from here
+└────────┬────────┘
+         │ Internet Connection
+         │ (Wi-Fi/Ethernet/VPN)
+         │
+         ▼
+┌─────────────────────────────────────────────┐
+│   Azure Virtual Desktop Gateway             │
+│   - rdgateway.wvd.microsoft.com            │
+│   - rdbroker.wvd.microsoft.com             │
+│   - rdweb.wvd.microsoft.com                │
+│                                             │
+│   Public Endpoints (Port 443/3478/3479)    │
+└────────┬────────────────────────────────────┘
+         │ Azure Backbone Network
+         │ (Private/Optimized)
+         │
+         ▼
+┌─────────────────────────────────────────────┐
+│   Session Hosts (Private VNet)             │
+│   - Windows 10/11 Multi-session            │
+│   - Windows Server                          │
+│   - Private IP Addresses                    │
+└─────────────────────────────────────────────┘
+
+Test Coverage:
+✓ User Device → Gateway (All tests)
+✗ Gateway → Session Host (Managed by Azure)
+```
+
+### Connection Flow
+1. **User initiates connection** → Contacts AVD Gateway
+2. **Authentication** → Azure AD validates user
+3. **Broker assignment** → Determines which session host to use
+4. **Gateway establishes tunnel** → Connects to session host
+5. **RDP session begins** → User sees their desktop
+
+### Where Disconnects Typically Occur
+- 🔴 **User's Internet Connection** (Most Common) - Poor Wi-Fi, ISP issues
+- 🔴 **Network Adapter Power Management** - Device goes to sleep
+- 🔴 **UDP Blocked** - Forces TCP fallback (slower, less stable)
+- 🟡 **High Latency/Jitter** - Network congestion
+- 🟡 **DNS Issues** - Stale cache, slow resolution
+- 🟢 **Azure Gateway/Session Host** (Rare) - Azure manages reliability
+
+**This script focuses on identifying issues in the user-controllable areas (red/yellow zones).**
+
 ---
 
 **Note**: This script is for diagnostic purposes only and does not modify any system settings without user intervention.
