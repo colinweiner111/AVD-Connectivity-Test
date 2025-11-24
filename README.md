@@ -260,20 +260,20 @@ For issues, questions, or feature requests, please open an issue on GitHub.
 ## Microsoft Documentation Resources
 
 ### Azure Virtual Desktop
-- [AVD Network Connectivity Overview](https://learn.microsoft.com/en-us/azure/virtual-desktop/network-connectivity)
-- [Understanding Network Connectivity](https://learn.microsoft.com/en-us/azure/virtual-desktop/understand-network-connectivity)
+- [AVD Overview and Architecture](https://learn.microsoft.com/en-us/azure/virtual-desktop/overview)
+- [Network Connectivity Requirements](https://learn.microsoft.com/en-us/azure/virtual-desktop/network-connectivity)
 - [RDP Shortpath for Public Networks](https://learn.microsoft.com/en-us/azure/virtual-desktop/rdp-shortpath?tabs=public-networks)
-- [Session Connectivity](https://learn.microsoft.com/en-us/azure/virtual-desktop/troubleshoot-connection-latency)
+- [Required URLs and Endpoints](https://learn.microsoft.com/en-us/azure/virtual-desktop/safe-url-list?tabs=azure)
 
 ### Troubleshooting Guides
-- [Troubleshoot Connection Quality](https://learn.microsoft.com/en-us/azure/virtual-desktop/troubleshoot-connection-quality)
-- [Network Connectivity Checklist](https://learn.microsoft.com/en-us/azure/virtual-desktop/required-fqdn-endpoint)
-- [Azure Virtual Desktop Experience Estimator](https://azure.microsoft.com/en-us/products/virtual-desktop/assessment/)
+- [Troubleshoot Connections to Azure Virtual Desktop](https://learn.microsoft.com/en-us/azure/virtual-desktop/troubleshoot-connection)
+- [Diagnose Graphics Performance Issues](https://learn.microsoft.com/en-us/azure/virtual-desktop/remotefx-graphics-performance-counters)
+- [Azure Virtual Desktop Insights](https://learn.microsoft.com/en-us/azure/virtual-desktop/insights)
 
 ### Network Requirements
-- [Required URLs for AVD](https://learn.microsoft.com/en-us/azure/virtual-desktop/required-fqdn-endpoint)
-- [Bandwidth Requirements](https://learn.microsoft.com/en-us/azure/virtual-desktop/rdp-bandwidth)
-- [Proxy Server Guidelines](https://learn.microsoft.com/en-us/azure/virtual-desktop/proxy-server-support)
+- [Bandwidth Recommendations](https://learn.microsoft.com/en-us/windows-server/remote/remote-desktop-services/network-guidance)
+- [Proxy Server Support](https://learn.microsoft.com/en-us/azure/virtual-desktop/proxy-server-support)
+- [Azure Virtual Desktop Experience Estimator](https://azure.microsoft.com/en-us/products/virtual-desktop/assessment/)
 
 ## How Azure Virtual Desktop Connectivity Works
 
