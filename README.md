@@ -56,14 +56,22 @@ Tests 6 Azure Virtual Desktop gateway endpoints:
 
 ## Installation
 
-### Option 1: Download from GitHub (No Git Required)
+### Option 1: Download Just the Script (Easiest)
+1. Go to [Test-AVDEndUserConnectivity.ps1](https://github.com/colinweiner111/AVD-Connectivity-Test/blob/main/Test-AVDEndUserConnectivity.ps1)
+2. Click the **"Raw"** button (top right)
+3. Right-click → **"Save As..."** → Save to your desired location
+4. Or use PowerShell to download directly:
+```powershell
+Invoke-WebRequest -Uri "https://raw.githubusercontent.com/colinweiner111/AVD-Connectivity-Test/main/Test-AVDEndUserConnectivity.ps1" -OutFile "Test-AVDEndUserConnectivity.ps1"
+```
+
+### Option 2: Download All Files as ZIP
 1. Go to [https://github.com/colinweiner111/AVD-Connectivity-Test](https://github.com/colinweiner111/AVD-Connectivity-Test)
 2. Click the green **"Code"** button
 3. Select **"Download ZIP"**
 4. Extract the ZIP file to your desired location
-5. Open PowerShell and navigate to the extracted folder
 
-### Option 2: Clone with Git (If Git is Installed)
+### Option 3: Clone with Git (If Git is Installed)
 ```powershell
 git clone https://github.com/colinweiner111/AVD-Connectivity-Test.git
 cd AVD-Connectivity-Test
