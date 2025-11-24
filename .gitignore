@@ -1,0 +1,31 @@
+# Ignore log files
+*.log
+
+# Ignore CSV exports
+*.csv
+
+# Ignore PowerShell transcript files
+*.txt
+
+# Ignore Windows thumbnail cache
+Thumbs.db
+
+# Ignore macOS files
+.DS_Store
+
+# Ignore IDE/Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Ignore temporary files
+*.tmp
+*.temp
+*.bak
+*.old
+
+# Ignore test/debug output
+test-*.ps1
+debug/
