@@ -31,7 +31,7 @@ Tests 6 Azure Virtual Desktop gateway endpoints:
 - MTU size (fragmentation detection)
 
 ### 🚨 Advanced Disconnect Diagnostics
-- **UDP Connectivity** - Tests ports 3478-3479 for RDP Shortpath
+- **UDP Connectivity** - Tests ports 3478, 3479, 3390 for RDP Shortpath
 - **Time Synchronization** - Detects clock drift causing auth failures
 - **DNS Cache & TTL** - Identifies stale DNS issues
 - **Connection Broker Stress Test** - Tests broker stability under load
@@ -292,7 +292,10 @@ For issues, questions, or feature requests, please open an issue on GitHub.
 │   - rdbroker.wvd.microsoft.com             │
 │   - rdweb.wvd.microsoft.com                │
 │                                             │
-│   Public Endpoints (Port 443/3478/3479)    │
+│   Public Endpoints                          │
+│   - Port 443 (HTTPS/Gateway)               │
+│   - Ports 3478/3479 (STUN/TURN)            │
+│   - Port 3390 (UDP RDP Shortpath)          │
 └────────┬────────────────────────────────────┘
          │ Azure Backbone Network
          │ (Private/Optimized)

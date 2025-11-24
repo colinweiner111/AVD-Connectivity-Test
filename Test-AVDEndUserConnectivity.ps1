@@ -324,7 +324,7 @@ function Test-ConnectionStability {
 function Test-UDPConnectivity {
     param(
         [string]$Hostname,
-        [int[]]$Ports = @(3478, 3479)
+        [int[]]$Ports = @(3478, 3479, 3390)
     )
     
     Write-Log "Testing UDP connectivity for RDP Shortpath..." -Level INFO
