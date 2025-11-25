@@ -7,6 +7,8 @@
     It checks gateway endpoints, DNS resolution, network connectivity, and RDP broker availability.
     Runs continuously with configurable test intervals.
     
+    REQUIRES: PowerShell 7.0 or higher
+    
 .PARAMETER IntervalMinutes
     Time in minutes between each connectivity test (default: 5)
     
@@ -20,6 +22,8 @@
     .\Test-AVDEndUserConnectivity.ps1 -IntervalMinutes 3 -LogPath "C:\Logs"
 #>
 
+#Requires -Version 7.0
+
 [CmdletBinding()]
 param(
     [Parameter(Mandatory=$false)]
@@ -28,6 +32,18 @@ param(
     [Parameter(Mandatory=$false)]
     [string]$LogPath = $PSScriptRoot
 )
+
+# Check PowerShell version
+if ($PSVersionTable.PSVersion.Major -lt 7) {
+    Write-Host "ERROR: This script requires PowerShell 7.0 or higher" -ForegroundColor Red
+    Write-Host "Current version: $($PSVersionTable.PSVersion)" -ForegroundColor Yellow
+    Write-Host ""
+    Write-Host "To install PowerShell 7, run:" -ForegroundColor Cyan
+    Write-Host "  winget install Microsoft.PowerShell" -ForegroundColor White
+    Write-Host ""
+    Write-Host "Or download from: https://aka.ms/powershell" -ForegroundColor Cyan
+    exit 1
+}
 
 # AVD Commercial Gateway endpoints
 $AVDEndpoints = @(
@@ -209,7 +225,12 @@ function Test-NetworkJitter {
     
     try {
         $PingResults = Test-Connection -ComputerName $Hostname -Count $Count -ErrorAction Stop
-        $Latencies = $PingResults | Select-Object -ExpandProperty Latency
+        $Latencies = @($PingResults | Select-Object -ExpandProperty Latency | Where-Object { $_ -gt 0 })
+        
+        if ($Latencies.Count -eq 0) {
+            Write-Log "Jitter Test to $Hostname - FAILED: No valid latency measurements" -Level ERROR
+            return $null
+        }
         
         $AvgLatency = ($Latencies | Measure-Object -Average).Average
         $MinLatency = ($Latencies | Measure-Object -Minimum).Minimum

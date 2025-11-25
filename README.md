@@ -50,9 +50,29 @@ Tests 6 Azure Virtual Desktop gateway endpoints:
 ## Requirements
 
 - Windows 10/11 or Windows Server
-- PowerShell 5.1 or later
+- **PowerShell 7.0 or later** (PowerShell 5.1 is NOT supported)
 - Internet connectivity
 - Administrator privileges recommended (for full diagnostics)
+
+### Installing PowerShell 7
+
+This script requires PowerShell 7 for improved performance and reliability.
+
+**Option 1: Using Windows Package Manager (Recommended)**
+```powershell
+winget install Microsoft.PowerShell
+```
+
+**Option 2: Direct Download**
+
+Download and install from: https://aka.ms/powershell
+
+**Verify Installation**
+```powershell
+pwsh -Version
+```
+
+You should see version 7.0 or higher.
 
 ## Installation
 
@@ -63,6 +83,10 @@ Tests 6 Azure Virtual Desktop gateway endpoints:
 4. Or use PowerShell to download directly:
 ```powershell
 Invoke-WebRequest -Uri "https://raw.githubusercontent.com/colinweiner111/AVD-Connectivity-Test/master/Test-AVDEndUserConnectivity.ps1" -OutFile "Test-AVDEndUserConnectivity.ps1"
+```
+5. Run with PowerShell 7:
+```powershell
+pwsh .\Test-AVDEndUserConnectivity.ps1
 ```
 
 ### Option 2: Download All Files as ZIP
@@ -88,19 +112,19 @@ Unblock-File -Path .\Test-AVDEndUserConnectivity.ps1
 ### Basic Usage
 Run with default settings (tests every 5 minutes):
 ```powershell
-.\Test-AVDEndUserConnectivity.ps1
+pwsh .\Test-AVDEndUserConnectivity.ps1
 ```
 
 ### Custom Test Interval
 Test every 3 minutes:
 ```powershell
-.\Test-AVDEndUserConnectivity.ps1 -IntervalMinutes 3
+pwsh .\Test-AVDEndUserConnectivity.ps1 -IntervalMinutes 3
 ```
 
 ### Custom Log Location
 Save logs to a specific directory:
 ```powershell
-.\Test-AVDEndUserConnectivity.ps1 -LogPath "C:\AVD-Logs"
+pwsh .\Test-AVDEndUserConnectivity.ps1 -LogPath "C:\AVD-Logs"
 ```
 
 ### Combined Parameters
