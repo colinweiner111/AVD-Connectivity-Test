@@ -49,8 +49,10 @@ Tests 6 Azure Virtual Desktop gateway endpoints:
 
 ## Requirements
 
+> [!IMPORTANT]
+> **PowerShell 7.0 or later is required** - PowerShell 5.1 is NOT supported
+
 - Windows 10/11 or Windows Server
-- **PowerShell 7.0 or later** (PowerShell 5.1 is NOT supported)
 - Internet connectivity
 - Administrator privileges recommended (for full diagnostics)
 
