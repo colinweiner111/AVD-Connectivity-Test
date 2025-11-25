@@ -12,13 +12,16 @@ PowerShell script for diagnosing Azure Virtual Desktop (AVD) connectivity issues
 - Detects problematic configurations
 
 ### 🌐 Comprehensive Connectivity Testing
-Tests 6 Azure Virtual Desktop gateway endpoints:
+Tests 9 Azure Virtual Desktop endpoints:
 - `rdgateway-r0.wvd.microsoft.com`
 - `rdgateway-r1.wvd.microsoft.com`
 - `rdgateway-g-us-r0.wvd.microsoft.com`
 - `rdgateway-g-us-r1.wvd.microsoft.com`
 - `rdbroker.wvd.microsoft.com`
 - `rdweb.wvd.microsoft.com`
+- `rdgateway.wvd.microsoft.com` (redirect server)
+- `licensing.rd.microsoft.com` (RDP licensing)
+- `diagnostics.wvd.microsoft.com` (diagnostics)
 
 **Per-endpoint tests:**
 - DNS resolution
@@ -31,6 +34,10 @@ Tests 6 Azure Virtual Desktop gateway endpoints:
 - MTU size (fragmentation detection)
 
 ### 🚨 Advanced Disconnect Diagnostics
+- **Azure AD Authentication Tests** - Verifies login.microsoftonline.com, graph.microsoft.com, auth.gfx.ms connectivity
+- **WebSocket Connectivity** - Tests RDP Web Client support and protocol upgrade capability
+- **DNS Resolution Consistency** - Detects split-DNS, round-robin, and DNS consistency issues
+- **TCP Reset Statistics** - Analyzes connection resets, TIME_WAIT states, and system event logs
 - **UDP Connectivity** - Tests ports 3478, 3479, 3390 for RDP Shortpath
 - **Time Synchronization** - Detects clock drift causing auth failures
 - **DNS Cache & TTL** - Identifies stale DNS issues

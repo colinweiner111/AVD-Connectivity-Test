@@ -52,7 +52,10 @@ $AVDEndpoints = @(
     'rdgateway-g-us-r0.wvd.microsoft.com',
     'rdgateway-g-us-r1.wvd.microsoft.com',
     'rdbroker.wvd.microsoft.com',
-    'rdweb.wvd.microsoft.com'
+    'rdweb.wvd.microsoft.com',
+    'rdgateway.wvd.microsoft.com',
+    'licensing.rd.microsoft.com',
+    'diagnostics.wvd.microsoft.com'
 )
 
 # Initialize log file with timestamp per test run
@@ -803,6 +806,252 @@ function Test-IPv6vsIPv4 {
     }
 }
 
+function Test-AzureADConnectivity {
+    Write-Log "Testing Azure AD authentication endpoints..." -Level INFO
+    
+    $AuthEndpoints = @(
+        'login.microsoftonline.com',
+        'graph.microsoft.com',
+        'login.windows.net',
+        'auth.gfx.ms'
+    )
+    
+    $FailedEndpoints = @()
+    $TotalLatency = 0
+    
+    foreach ($Endpoint in $AuthEndpoints) {
+        try {
+            # Test DNS resolution
+            $DnsResult = Resolve-DnsName -Name $Endpoint -ErrorAction Stop
+            
+            # Test HTTPS connectivity and measure latency
+            $Latency = Measure-Command {
+                $Response = Invoke-WebRequest -Uri "https://$Endpoint" -Method Head -UseBasicParsing -TimeoutSec 5 -ErrorAction Stop
+            }
+            
+            $LatencyMs = [math]::Round($Latency.TotalMilliseconds, 2)
+            $TotalLatency += $LatencyMs
+            Write-Log "  $Endpoint - SUCCESS (${LatencyMs}ms)" -Level SUCCESS
+        }
+        catch {
+            $FailedEndpoints += $Endpoint
+            Write-Log "  $Endpoint - FAILED: $($_.Exception.Message)" -Level ERROR
+        }
+    }
+    
+    if ($FailedEndpoints.Count -eq 0) {
+        $AvgLatency = [math]::Round($TotalLatency / $AuthEndpoints.Count, 2)
+        Write-Log "Azure AD Connectivity - EXCELLENT (All endpoints reachable, avg ${AvgLatency}ms)" -Level SUCCESS
+    }
+    elseif ($FailedEndpoints.Count -lt $AuthEndpoints.Count) {
+        Write-Log "Azure AD Connectivity - PARTIAL ($($FailedEndpoints.Count) of $($AuthEndpoints.Count) endpoints unreachable)" -Level WARNING
+        Write-Log "  WARNING: Authentication may fail intermittently" -Level WARNING
+    }
+    else {
+        Write-Log "Azure AD Connectivity - CRITICAL (All authentication endpoints unreachable)" -Level ERROR
+        Write-Log "  ERROR: Login failures expected - check firewall/proxy settings" -Level ERROR
+    }
+    
+    return @{
+        FailedEndpoints = $FailedEndpoints
+        TotalEndpoints = $AuthEndpoints.Count
+        AverageLatency = if ($TotalLatency -gt 0) { $TotalLatency / ($AuthEndpoints.Count - $FailedEndpoints.Count) } else { 0 }
+    }
+}
+
+function Test-WebSocketConnectivity {
+    param([string]$Hostname)
+    
+    Write-Log "Testing WebSocket connectivity to $Hostname..." -Level INFO
+    
+    try {
+        # Test standard HTTPS first
+        $HttpsTest = Test-NetConnection -ComputerName $Hostname -Port 443 -WarningAction SilentlyContinue
+        
+        if (-not $HttpsTest.TcpTestSucceeded) {
+            Write-Log "WebSocket Test - FAILED: Port 443 not reachable" -Level ERROR
+            return $false
+        }
+        
+        # Attempt WebSocket-style connection (HTTP Upgrade request)
+        try {
+            $Uri = "wss://$Hostname"
+            $ClientWebSocket = New-Object System.Net.WebSockets.ClientWebSocket
+            $CancellationToken = New-Object System.Threading.CancellationToken
+            
+            # Attempt connection with 5 second timeout
+            $ConnectTask = $ClientWebSocket.ConnectAsync($Uri, $CancellationToken)
+            $TimeoutTask = [System.Threading.Tasks.Task]::Delay(5000)
+            $CompletedTask = [System.Threading.Tasks.Task]::WaitAny(@($ConnectTask, $TimeoutTask))
+            
+            if ($CompletedTask -eq 0 -and $ClientWebSocket.State -eq 'Open') {
+                Write-Log "WebSocket Connectivity - SUCCESS (RDP Web Client supported)" -Level SUCCESS
+                $ClientWebSocket.Dispose()
+                return $true
+            }
+            elseif ($ClientWebSocket.State -eq 'Aborted' -or $ClientWebSocket.State -eq 'Closed') {
+                Write-Log "WebSocket Connectivity - BLOCKED (Firewall/proxy may block web client)" -Level WARNING
+                Write-Log "  WARNING: Web-based RDP clients may not work" -Level WARNING
+                $ClientWebSocket.Dispose()
+                return $false
+            }
+            else {
+                Write-Log "WebSocket Connectivity - TIMEOUT (Connection attempt timed out)" -Level WARNING
+                $ClientWebSocket.Dispose()
+                return $false
+            }
+        }
+        catch {
+            Write-Log "WebSocket Connectivity - FAILED: $($_.Exception.Message)" -Level WARNING
+            Write-Log "  INFO: Web client functionality may be limited" -Level INFO
+            return $false
+        }
+    }
+    catch {
+        Write-Log "WebSocket Test - ERROR: $($_.Exception.Message)" -Level ERROR
+        return $false
+    }
+}
+
+function Test-DNSResolutionConsistency {
+    param([string]$Hostname)
+    
+    Write-Log "Testing DNS resolution consistency for $Hostname..." -Level INFO
+    
+    try {
+        $DnsResults = @()
+        
+        # Perform 3 consecutive DNS queries
+        for ($i = 1; $i -le 3; $i++) {
+            try {
+                $Result = Resolve-DnsName -Name $Hostname -Type A -ErrorAction Stop
+                $IPs = $Result | Where-Object { $_.Type -eq 'A' } | Select-Object -ExpandProperty IPAddress
+                $DnsResults += ,@($IPs)
+                Start-Sleep -Milliseconds 500
+            }
+            catch {
+                Write-Log "  DNS Query $i - FAILED: $($_.Exception.Message)" -Level ERROR
+                return $null
+            }
+        }
+        
+        # Compare results
+        $FirstResult = $DnsResults[0] | Sort-Object
+        $AllConsistent = $true
+        $RoundRobinDetected = $false
+        
+        for ($i = 1; $i -lt $DnsResults.Count; $i++) {
+            $CurrentResult = $DnsResults[$i] | Sort-Object
+            
+            if (Compare-Object $FirstResult $CurrentResult) {
+                $AllConsistent = $false
+                $RoundRobinDetected = $true
+            }
+        }
+        
+        if ($AllConsistent) {
+            Write-Log "DNS Resolution Consistency - EXCELLENT (Consistent across 3 queries: $($FirstResult -join ', '))" -Level SUCCESS
+        }
+        elseif ($RoundRobinDetected) {
+            Write-Log "DNS Resolution Consistency - ROUND-ROBIN DETECTED" -Level WARNING
+            Write-Log "  Query 1: $($DnsResults[0] -join ', ')" -Level INFO
+            Write-Log "  Query 2: $($DnsResults[1] -join ', ')" -Level INFO
+            Write-Log "  Query 3: $($DnsResults[2] -join ', ')" -Level INFO
+            Write-Log "  INFO: Round-robin DNS is normal for AVD but can cause issues with IP-based firewall rules" -Level INFO
+        }
+        
+        # Check for split-DNS (internal vs external)
+        $UniqueIPCount = ($DnsResults | ForEach-Object { $_ } | Select-Object -Unique).Count
+        if ($UniqueIPCount -gt 4) {
+            Write-Log "  WARNING: High IP variation detected - possible split-DNS configuration" -Level WARNING
+            Write-Log "  RECOMMENDATION: Verify consistent DNS servers across all queries" -Level WARNING
+        }
+        
+        return @{
+            Consistent = $AllConsistent
+            RoundRobin = $RoundRobinDetected
+            UniqueIPs = $UniqueIPCount
+        }
+    }
+    catch {
+        Write-Log "DNS Consistency Test - FAILED: $($_.Exception.Message)" -Level ERROR
+        return $null
+    }
+}
+
+function Get-TCPResetStatistics {
+    Write-Log "Analyzing TCP connection statistics..." -Level INFO
+    
+    try {
+        # Get TCP connection stats using netstat
+        $NetstatOutput = netstat -ano | Select-String -Pattern "TCP"
+        
+        $TimeWaitCount = ($NetstatOutput | Select-String -Pattern "TIME_WAIT").Count
+        $CloseWaitCount = ($NetstatOutput | Select-String -Pattern "CLOSE_WAIT").Count
+        $EstablishedCount = ($NetstatOutput | Select-String -Pattern "ESTABLISHED").Count
+        $TotalConnections = $NetstatOutput.Count
+        
+        Write-Log "  Active TCP Connections: $TotalConnections" -Level INFO
+        Write-Log "  ESTABLISHED: $EstablishedCount" -Level INFO
+        Write-Log "  TIME_WAIT: $TimeWaitCount" -Level INFO
+        Write-Log "  CLOSE_WAIT: $CloseWaitCount" -Level INFO
+        
+        # Calculate ratios
+        if ($TotalConnections -gt 0) {
+            $TimeWaitRatio = [math]::Round(($TimeWaitCount / $TotalConnections) * 100, 2)
+            $CloseWaitRatio = [math]::Round(($CloseWaitCount / $TotalConnections) * 100, 2)
+            
+            if ($TimeWaitRatio -gt 30) {
+                Write-Log "  WARNING: High TIME_WAIT ratio (${TimeWaitRatio}%) - indicates frequent connection resets" -Level WARNING
+                Write-Log "  RECOMMENDATION: May cause AVD disconnects - check for network instability" -Level WARNING
+            }
+            
+            if ($CloseWaitCount -gt 50) {
+                Write-Log "  WARNING: High CLOSE_WAIT count ($CloseWaitCount) - application may not be closing connections properly" -Level WARNING
+            }
+        }
+        
+        # Check Windows System event log for network errors in last hour
+        try {
+            $StartTime = (Get-Date).AddHours(-1)
+            $NetworkErrors = Get-WinEvent -FilterHashtable @{
+                LogName = 'System'
+                Level = 2  # Error
+                StartTime = $StartTime
+            } -ErrorAction SilentlyContinue | Where-Object {
+                $_.ProviderName -like '*Tcpip*' -or 
+                $_.ProviderName -like '*NetBT*' -or
+                $_.Message -like '*network*' -or
+                $_.Message -like '*TCP*'
+            }
+            
+            if ($NetworkErrors) {
+                $ErrorCount = ($NetworkErrors | Measure-Object).Count
+                Write-Log "  WARNING: $ErrorCount network-related errors in System event log (last hour)" -Level WARNING
+                Write-Log "  RECOMMENDATION: Review System event log for details" -Level WARNING
+            }
+            else {
+                Write-Log "  No network errors in System event log (last hour)" -Level SUCCESS
+            }
+        }
+        catch {
+            Write-Log "  Unable to check System event log: $($_.Exception.Message)" -Level INFO
+        }
+        
+        return @{
+            TotalConnections = $TotalConnections
+            Established = $EstablishedCount
+            TimeWait = $TimeWaitCount
+            CloseWait = $CloseWaitCount
+            TimeWaitRatio = $TimeWaitRatio
+        }
+    }
+    catch {
+        Write-Log "TCP Statistics - FAILED: $($_.Exception.Message)" -Level ERROR
+        return $null
+    }
+}
+
 function Export-TestResultsToCSV {
     param(
         [hashtable]$TestResults,
@@ -1208,6 +1457,22 @@ function Test-AVDConnectivity {
     Write-Log "================================" -Level INFO
     Write-Log "Advanced Disconnect Diagnostics" -Level INFO
     Write-Log "================================" -Level INFO
+    
+    # Test Azure AD Authentication Endpoints
+    Write-Log "" -Level INFO
+    Test-AzureADConnectivity
+    
+    # Test WebSocket Support
+    Write-Log "" -Level INFO
+    Test-WebSocketConnectivity -Hostname $AVDEndpoints[0]
+    
+    # Test DNS Resolution Consistency
+    Write-Log "" -Level INFO
+    Test-DNSResolutionConsistency -Hostname $AVDEndpoints[0]
+    
+    # Get TCP Reset Statistics
+    Write-Log "" -Level INFO
+    Get-TCPResetStatistics
     
     # Test UDP Connectivity (RDP Shortpath)
     Write-Log "" -Level INFO
